@@ -1,10 +1,10 @@
 ---
 c_PigeonIMU_Create2:
   code: |
-    raise NotImplementedError
+    self.create_called = True
 c_PigeonIMU_Create1:
   code: |
-    raise NotImplementedError
+    self.create_called = True
 c_PigeonIMU_GetDescription:
   ignore: true # TODO
   code: |

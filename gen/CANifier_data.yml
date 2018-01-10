@@ -1,7 +1,7 @@
 ---
 c_CANifier_Create1:
   code: |
-    raise NotImplementedError
+    self.create_called = True
 c_CANifier_GetDescription:
   ignore: true # TODO
   get: description

@@ -23,23 +23,27 @@
 #----------------------------------------------------------------------------
 import enum
 import hal
+from collections import namedtuple
 from wpilib._impl.utils import match_arglist
 from .talonsrx import TalonSRX
-from ._impl import ErrorCode, ParamEnum, PigeonIMU_StatusFrame, PigeonIMU as PigeonImuImpl, PigeonIMU_ControlFrame, PigeonIMU_Faults, PigeonIMU_StickyFaults
+from ._impl import (
+    ErrorCode,
+    ParamEnum,
+    PigeonIMU_StatusFrame,
+    PigeonIMU as PigeonImuImpl,
+    PigeonIMU_ControlFrame,
+    PigeonIMU_Faults,
+    PigeonIMU_StickyFaults,
+)
 
 
 __all__ = ['PigeonIMU', 'FusionStatus', 'GeneralStatus', 'PigeonState', 'CalibrationMode']
 
 
-class FusionStatus:
+_FusionStatus = namedtuple("_FusionStatus", ["bIsFusing", "bIsValid", "heading", "lastError"])
+
+class FusionStatus(_FusionStatus):
     """Data object for holding fusion information."""
-
-    def __init__(self):
-        self.heading = 0.0
-        self.bIsValid = False
-        self.bIsFusing = False
-        self.lastError = 0
-
     def __str__(self):
         if self.lastError != ErrorCode.OK:
             description = "Could not receive status frame.  Check wiring and web-config."
@@ -71,7 +75,12 @@ class PigeonState(enum.IntEnum):
     Unknown = -1
 
 
-class GeneralStatus:
+_GeneralStatus = namedtuple('_GeneralStatus', [
+    'state', 'currentMode', 'calibrationError', 'bCalIsBooting', 'tempC', 'upTimeSec', 
+    'noMotionBiasCount', 'tempCompensationCount', 'lastError'])
+
+
+class GeneralStatus(_GeneralStatus):
     """Data object for status on current calibration and general status.
     
     Pigeon has many calibration modes supported for a variety of uses. The
@@ -107,41 +116,39 @@ class GeneralStatus:
         update with the result. Pigeon will solid-fill LEDs with red (for
         failure) or green (for success) for ~5 seconds. Pigeon then perform
         boot-cal to cleanly apply the newly saved calibration data.
+
+    :param state:
+        The current state of the motion driver. This reflects if the sensor
+        signals are accurate. Most calibration modes will force Pigeon to
+        reinit the motion driver.
+    :param currentMode:
+        The currently applied calibration mode if state is in UserCalibration
+        or if bCalIsBooting is true. Otherwise it holds the last selected
+        calibration mode (when calibrationError was updated).
+    :param calibrationError:
+        The error code for the last calibration mode. Zero represents a
+        successful cal (with solid green LEDs at end of cal) and nonzero is a
+        failed calibration (with solid red LEDs at end of cal). Different
+        calibration
+    :param bCalIsBooting:
+        After caller requests a calibration mode, pigeon will perform a
+        boot-cal before entering the requested mode. During this period, this
+        flag is set to true.
+    :param tempC:
+        Temperature in Celsius
+    :param upTimeSec:
+        Number of seconds Pigeon has been up (since boot). This register is
+        reset on power boot or processor reset. Register is capped at 255
+        seconds with no wrap around.
+    :param noMotionBiasCount:
+        Number of times the Pigeon has automatically rebiased the gyro. This
+        counter overflows from 15 -> 0 with no cap.
+    :param tempCompensationCount:
+        Number of times the Pigeon has temperature compensated the various
+        signals. This counter overflows from 15 -> 0 with no cap.
+    :param lastError:
+        Same as getLastError()
     """
-
-    def __init__(self):
-        #: The current state of the motion driver. This reflects if the sensor
-        #: signals are accurate. Most calibration modes will force Pigeon to
-        #: reinit the motion driver.
-        state = PigeonState.Unknown
-        #: The currently applied calibration mode if state is in UserCalibration
-        #: or if bCalIsBooting is true. Otherwise it holds the last selected
-        #: calibration mode (when calibrationError was updated).
-        self.currentMode = CalibrationMode.Unknown
-        #: The error code for the last calibration mode. Zero represents a
-        #: successful cal (with solid green LEDs at end of cal) and nonzero is a
-        #: failed calibration (with solid red LEDs at end of cal). Different
-        #: calibration
-        self.calibrationError = 0
-        #: After caller requests a calibration mode, pigeon will perform a
-        #: boot-cal before entering the requested mode. During this period, this
-        #: flag is set to true.
-        self.bCalIsBooting = False
-        #: Temperature in Celsius
-        self.tempC = 0.0
-        #: Number of seconds Pigeon has been up (since boot). This register is
-        #: reset on power boot or processor reset. Register is capped at 255
-        #: seconds with no wrap around.
-        self.upTimeSec = 0
-        #: Number of times the Pigeon has automatically rebiased the gyro. This
-        #: counter overflows from 15 -> 0 with no cap.
-        self.noMotionBiasCount = 0
-        #: Number of times the Pigeon has temperature compensated the various
-        #: signals. This counter overflows from 15 -> 0 with no cap.
-        self.tempCompensationCount = 0
-        #: Same as getLastError()
-        self.lastError = 0
-
     def __str__(self):
         """
         general string description of current status"""
@@ -209,56 +216,45 @@ class PigeonIMU(PigeonImuImpl):
         elif index == 1:
             self.deviceNumber = results['talonSrx'].getDeviceID()
             self.create2(self.deviceNumber)
-            hal.report(64, m_deviceNumber + 1)
+            hal.report(64, self.deviceNumber + 1)
         hal.report(hal.UsageReporting.kResourceType_PigeonIMU, self.deviceNumber + 1)
 
-    def getGeneralStatus(self, toFill: GeneralStatus):
+    def getGeneralStatus(self) -> GeneralStatus:
         """
         Get the status of the current (or previousley complete) calibration.
         
-        :param generalStatus:
-        :param toFill: Container for the status information.
-        :returns: Error Code generated by function. 0 indicates no error.
+        :returns: :class:`.GeneralStatus`
+            generalstatus.lastError is Error Code generated by function.  0 indicates no error.
         """
-        (toFill.lastError, toFill.state, toFill.currentMode, toFill.calibrationError, 
-         toFill.bCalIsBooting, toFill.tempC, toFill.upTimeSec, toFill.noMotionBiasCount, 
-         toFill.tempCompensationCount) = super().getGeneralStatus()
-        return toFill.lastError
+        results = super().getGeneralStatus()
+        return GeneralStatus(results)
 
-    def getFusedHeading(self, toFill: FusionStatus = None) -> float:
+    def getFusedHeading(self) -> float:
         """
         :param status:
             object reference to fill with fusion status flags.
             Caller may pass null if flags are not needed.
-        :returns: The fused heading in degrees.
+        :returns: :class:`.FusionStatus`
         """
-
-        if toFill is None:
-            return self.getFusedHeading1()
-        else:
-            (toFill.lastError, toFill.heading, toFill.bIsFusing, toFill.bIsValid) = self.getFusedHeading2()
-            return toFill.lastError
+        results = self.getFusedHeading2()
+        return FusionStatus(results)
         
-    def getFaults(self, toFill: PigeonIMU_Faults):
+    def getFaults(self) -> typing.Tuple[int, PigeonIMU_Faults]:
         """
         Gets the fault status
 
-        :param toFill:
-            Container for fault statuses.
-        :returns: Error Code generated by function. 0 indicates no error.
+        :returns: (error code, :class:`.PigeonIMU_Faults`)
+            Error Code generated by function. 0 indicates no error.
         """
         _, bits = super().getFaults()
-        toFill.update(bits)
-        return self.getLastError()
+        return self.getLastError(), PigeonIMU_Faults(bits)
 
-    def getStickyFaults(self, toFill: PigeonIMU_StickyFaults):
+    def getStickyFaults(self) -> typing.Tuple[int, PigeonIMU_StickyFaults]:
         """
         Gets the sticky fault status
 
-        :param toFill:
-            Container for sticky fault statuses.
-        :returns: Error Code generated by function. 0 indicates no error.
+        :returns: (error code, :class:`.PigeonIMU_StickyFaults)
+            Error Code generated by function. 0 indicates no error.
         """
         _, bits = super().getStickyFaults()
-        toFill.update(bits)
-        return self.getLastError()
+        return self.getLastError(), PigeonIMU_StickyFaults(bits)

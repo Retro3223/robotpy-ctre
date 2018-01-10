@@ -24,7 +24,15 @@
 import enum
 import hal
 
-from ._impl import GeneralPin, ParamEnum, CANifierStatusFrame, CANifierControlFrame, CANifierFaults, CANifierStickyFaults, CANifier as CANifierImpl
+from ._impl import (
+    GeneralPin,
+    ParamEnum,
+    CANifierStatusFrame,
+    CANifierControlFrame,
+    CANifierFaults,
+    CANifierStickyFaults,
+    CANifier as CANifierImpl,
+)
 
 
 __all__ = ['CANifier', 'LEDChannel', 'PWMChannel']
@@ -75,7 +83,7 @@ class CANifier(CANifierImpl):
 
         :param deviceId: The CAN Device ID of the CANifier.
         """
-        self.impl.create1(deviceId)
+        self.create1(deviceId)
         self.tempPins = [False] * 11
         hal.report(hal.UsageReporting.kResourceType_CANifier, deviceId + 1)
 
@@ -100,7 +108,6 @@ class CANifier(CANifierImpl):
 
         :param allPins: A structure to fill with the current state of all pins.
         """
-        #?????
         _, self.tempPins = super().getGeneralInputs()
         allPins.LIMF = self.tempPins[GeneralPin.LIMF]
         allPins.LIMR = self.tempPins[GeneralPin.LIMR]

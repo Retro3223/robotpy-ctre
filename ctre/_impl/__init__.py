@@ -1,14 +1,62 @@
 import hal
+from collections import namedtuple
+from .faults import Faults
+from .stickyfaults import StickyFaults
+from .canifierfaults import CANifierFaults
+from .canifierstickyfaults import CANifierStickyFaults
+from .pigeonfaults import PigeonIMU_Faults
+from .pigeonstickyfaults import PigeonIMU_StickyFaults
+from .trajectorypoint import TrajectoryPoint
+from .motionprofilestatus import MotionProfileStatus
 
 if hal.isSimulation():
     from .autogen.canifier_sim import CANifier
     from .autogen.motcontroller_sim import MotController
     from .autogen.pigeonimu_sim import PigeonIMU
+    from .autogen.ctre_sim_enums import (
+        ErrorCode,
+        NeutralMode,
+        RemoteFeedbackDevice,
+        FeedbackDevice,
+        StatusFrame,
+        StatusFrameEnhanced,
+        VelocityMeasPeriod,
+        RemoteLimitSwitchSource,
+        LimitSwitchNormal,
+        LimitSwitchSource,
+        ParamEnum,
+        CANifierStatusFrame,
+        CANifierControlFrame,
+        ParamEnum,
+        PigeonIMU_StatusFrame,
+        PigeonIMU_ControlFrame,
+    )
 else:
     from .ctre_roborio import (
         CANifier,
         MotController,
-        PigeonIMU
+        PigeonIMU,
+        ErrorCode,
+        NeutralMode,
+        ControlFrame,
+        RemoteFeedbackDevice,
+        FeedbackDevice,
+        RemoteSensorSource,
+        StatusFrame,
+        StatusFrameEnhanced,
+        VelocityMeasPeriod,
+        RemoteLimitSwitchSource,
+        LimitSwitchNormal,
+        LimitSwitchSource,
+        MotionProfileStatus,
+        StickyFaults,
+        ParamEnum,
+        GeneralPin,
+        CANifierStatusFrame,
+        CANifierControlFrame,
+        ParamEnum,
+        PigeonIMU_StatusFrame,
+        PigeonIMU_ControlFrame,
     )
 
 
@@ -30,31 +78,4 @@ class ControlMode (enum.IntEnum):
     Disabled = 15
 
     
-NeutralMode = MagicMock()
-ErrorCode = MagicMock()
-RemoteFeedbackDevice = MagicMock()
-FeedbackDevice = MagicMock()
-RemoteSensorSource = MagicMock()
-SensorTerm = MagicMock()
-ControlFrame = MagicMock()
-StatusFrame = MagicMock()
-StatusFrameEnhanced = MagicMock()
-VelocityMeasPeriod = MagicMock()
-RemoteLimitSwitchSource = MagicMock()
-LimitSwitchNormal = MagicMock()
-LimitSwitchSource = MagicMock()
-TrajectoryPoint = MagicMock()
-MotionProfileStatus = MagicMock()
-Faults = MagicMock()
-StickyFaults = MagicMock()
-ParamEnum = MagicMock()
 GeneralPin = MagicMock()
-CANifierStatusFrame = MagicMock()
-CANifierControlFrame = MagicMock()
-CANifierFaults = MagicMock()
-CANifierStickyFaults = MagicMock()
-ParamEnum = MagicMock()
-PigeonIMU_StatusFrame = MagicMock()
-PigeonIMU_ControlFrame = MagicMock()
-PigeonIMU_Faults = MagicMock()
-PigeonIMU_StickyFaults = MagicMock()

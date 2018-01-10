@@ -59,3 +59,17 @@ sensorcollection module
     :members:
     :undoc-members:
     :show-inheritance:
+
+trajectorypoint module
+-----------------------
+.. automodule:: ctre._impl.trajectorypoint
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+motionprofilestatus module
+--------------------------
+.. automodule:: ctre._impl.motionprofilestatus
+    :members:
+    :undoc-members:
+    :show-inheritance:
